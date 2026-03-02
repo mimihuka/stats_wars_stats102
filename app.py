@@ -29,7 +29,7 @@ if st.button("Analyze"):
 
         X = vectorizer.transform(sentences)
 
-        # 预测
+        # 概率
         scores_lr = lr.predict_proba(X)[:,1]
         scores_mnb = mnb.predict_proba(X)[:,1]
         scores_cnb = cnb.predict_proba(X)[:,1]
@@ -46,27 +46,42 @@ if st.button("Analyze"):
 
         overall_avg = np.mean(list(avg_scores.values()))
 
-        # 🎨 动态背景
+        # 🌗 自动模式切换
         if overall_avg > 0.5:
-            bg_color = "#0f172a"   # 深蓝
-            text_color = "white"
+            mode = "dark"
         else:
-            bg_color = "#fff9c4"   # 阳光黄
-            text_color = "black"
+            mode = "light"
 
-        st.markdown(f"""
-        <style>
-        .stApp {{
-            background-color: {bg_color};
-            color: {text_color};
-        }}
-        [data-testid="metric-container"] {{
-            background-color: rgba(255,255,255,0.2);
-            border-radius: 12px;
-            padding: 15px;
-        }}
-        </style>
-        """, unsafe_allow_html=True)
+        if mode == "dark":
+            st.markdown("""
+            <style>
+            .stApp {
+                background-color: #0f172a;
+                color: white;
+            }
+            [data-testid="metric-container"] {
+                background-color: rgba(255,255,255,0.1);
+                border-radius: 12px;
+                padding: 15px;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            st.success("🌑 Overall Verdict: DARK")
+        else:
+            st.markdown("""
+            <style>
+            .stApp {
+                background-color: #fefce8;
+                color: black;
+            }
+            [data-testid="metric-container"] {
+                background-color: white;
+                border-radius: 12px;
+                padding: 15px;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            st.success("🌕 Overall Verdict: LIGHT")
 
         # 🔮 横向模型展示
         st.subheader("🔮 Model Predictions")
@@ -115,7 +130,7 @@ if st.button("Analyze"):
             yaxis=dict(range=[0,1]),
             xaxis_title="Sentence Index",
             yaxis_title="Dark Probability",
-            template="plotly_white",
+            template="plotly_dark" if mode=="dark" else "plotly_white",
             legend=dict(orientation="h", y=-0.2),
             height=500
         )
@@ -124,7 +139,7 @@ if st.button("Analyze"):
 
         st.plotly_chart(fig, use_container_width=True)
 
-        # 🔥 找最Dark和最Light句子（用LR作为代表）
+        # 极端句子
         darkest_index = np.argmax(scores_lr)
         lightest_index = np.argmin(scores_lr)
 
