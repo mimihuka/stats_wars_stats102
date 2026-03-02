@@ -9,6 +9,10 @@ st.markdown("""
 body {
     background-color: #f7fbff;
 }
+[data-testid="metric-container"] {
+    background-color: #f0f9ff;
+    border-radius: 12px;
+    padding: 15px;
 </style>
 """, unsafe_allow_html=True)
 
@@ -19,8 +23,8 @@ st.title("🌞 Light vs Dark Speech Analyzer")
 st.markdown("Analyze whether a speech leans toward Light or Dark ideology.")
 
 # 加载模型
-vectorizer_bi = joblib.load("models/vectorizer_bi.pkl")
-lr = joblib.load("models/lr_bi.pkl")
+vectorizer = joblib.load("models/vectorizer.pkl")
+lr = joblib.load("models/lr.pkl")
 svm = joblib.load("models/svm.pkl")
 mnb = joblib.load("models/mnb.pkl")
 cnb = joblib.load("models/cnb.pkl")
@@ -38,7 +42,7 @@ if st.button("Analyze"):
         sentences = re.split(r'(?<=[.!?]) +', text_input)
         sentences = [s.strip() for s in sentences if s.strip()]
 
-        X = vectorizer_bi.transform(sentences)
+        X = vectorizer.transform(sentences)
 
         # 获取概率
         scores_lr = lr.predict_proba(X)[:,1]
@@ -58,8 +62,14 @@ if st.button("Analyze"):
 
         st.subheader("🔮 Model Predictions")
 
-        for model, score in avg_scores.items():
-            st.metric(model, f"{score:.2f} Dark")
+        st.subheader("🔮 Model Predictions")
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        col1.metric("Logistic Regression", f"{avg_scores['Logistic Regression']:.2f}")
+        col2.metric("Multinomial NB", f"{avg_scores['Multinomial NB']:.2f}")
+        col3.metric("Complement NB", f"{avg_scores['Complement NB']:.2f}")
+        col4.metric("SVM", f"{avg_scores['SVM']:.2f}")
 
         # 折线图
         st.subheader("📈 Sentence-level Dark Probability")
