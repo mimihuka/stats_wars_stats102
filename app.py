@@ -7,21 +7,38 @@ import plotly.graph_objects as go
 st.set_page_config(page_title="Light vs Dark Analyzer", layout="wide")
 
 # =========================
-# 加载模型
+# 加载模型 + 各自 vectorizer
 # =========================
 lr  = joblib.load("models/lr.pkl")
 mnb = joblib.load("models/mnb.pkl")
 cnb = joblib.load("models/cnb.pkl")
 bnb = joblib.load("models/bnb_best.pkl")
 
-vectorizer = joblib.load("models/vectorizer.pkl")
-# vectorizer_bnb = joblib.load("models/tfidf_bnb.pkl")
+vectorizer_normal = joblib.load("models/vectorizer.pkl")
+vectorizer_bnb = joblib.load("models/tfidf_bnb.pkl")
 
+# 每个模型自带 vectorizer 和 binary 标记
 models = {
-    "Logistic Regression": ("normal", lr),
-    "Multinomial NB": ("normal", mnb),
-    "Complement NB": ("normal", cnb),
-    "Bernoulli NB (Best)": ("binary", bnb)
+    "Logistic Regression": {
+        "model": lr,
+        "vectorizer": vectorizer_normal,
+        "binary": False
+    },
+    "Multinomial NB": {
+        "model": mnb,
+        "vectorizer": vectorizer_normal,
+        "binary": False
+    },
+    "Complement NB": {
+        "model": cnb,
+        "vectorizer": vectorizer_normal,
+        "binary": False
+    },
+    "Bernoulli NB (Best)": {
+        "model": bnb,
+        "vectorizer": vectorizer_bnb,
+        "binary": True
+    }
 }
 
 # =========================
@@ -33,16 +50,14 @@ def clean_text(text):
     return text
 
 # =========================
-# 预测函数
+# 预测函数（完全自包含）
 # =========================
-def predict_dark_prob(text, model_type, model):
+def predict_dark_prob(text, model, vectorizer, binary):
     clean = clean_text(text)
+    vec = vectorizer.transform([clean])
 
-    if model_type == "binary":
-        vec = vectorizer_bnb.transform([clean])
+    if binary:
         vec = (vec > 0).astype(int)
-    else:
-        vec = vectorizer.transform([clean])
 
     return model.predict_proba(vec)[0][1]
 
@@ -66,11 +81,19 @@ if st.button("⚡ Analyze the Force"):
         results = {}
         sentence_scores = {}
 
-        for name, (model_type, model) in models.items():
+        # =========================
+        # 预测
+        # =========================
+        for name, config in models.items():
             preds = []
 
             for s in sentences:
-                prob = predict_dark_prob(s, model_type, model)
+                prob = predict_dark_prob(
+                    s,
+                    config["model"],
+                    config["vectorizer"],
+                    config["binary"]
+                )
                 preds.append(prob)
 
             sentence_scores[name] = preds
@@ -79,7 +102,9 @@ if st.button("⚡ Analyze the Force"):
         overall_avg = np.mean(list(results.values()))
         verdict = "🌑 DARK SIDE" if overall_avg > 0.5 else "🌕 LIGHT SIDE"
 
+        # =========================
         # 动态背景
+        # =========================
         if overall_avg > 0.5:
             st.markdown("""
             <style>
