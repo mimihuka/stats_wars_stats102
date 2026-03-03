@@ -187,7 +187,7 @@ if st.button("⚡ Analyze the Force"):
 
         cols = st.columns(len(results))
         for col, (name, score) in zip(cols, results.items()):
-            col.metric(name, f"{score:.2f}")
+            col.metric(name, f"{score * 100:.2f}%")
 
         # =========================
         # 折线图
