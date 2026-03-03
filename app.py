@@ -9,14 +9,34 @@ st.set_page_config(page_title="Light vs Dark Analyzer", layout="wide")
 # =========================
 # 加载模型
 # =========================
-vectorizer = joblib.load("models/vectorizer.pkl")
-lr = joblib.load("models/lr.pkl")
-svm = joblib.load("models/svm.pkl")
-mnb = joblib.load("models/mnb.pkl")
-cnb = joblib.load("models/cnb.pkl")
+bundle_lr  = joblib.load("models/bundle_lr.pkl")
+bundle_mnb = joblib.load("models/bundle_mnb.pkl")
+bundle_cnb = joblib.load("models/bundle_cnb.pkl")
+bundle_bnb = joblib.load("models/bundle_bnb.pkl")
 
+models = {
+    "Logistic Regression": bundle_lr,
+    "Multinomial NB": bundle_mnb,
+    "Complement NB": bundle_cnb,
+    "Bernoulli NB (Best)": bundle_bnb
+}
+
+# =========================
+# 统一预测函数
+# =========================
+def predict_force_alignment(text, bundle, threshold=0.5):
+    proba = bundle.predict_proba(text)
+    return {
+        "Light": proba[0],
+        "Dark": proba[1],
+        "prediction": "Light" if proba[0] >= threshold else "Dark"
+    }
+
+# =========================
+# UI
+# =========================
 st.title("✨ Light vs Dark Ideology Analyzer")
-st.markdown("Enter a speech and watch the Force reveal its alignment.")
+st.markdown("Enter a speech and reveal its alignment.")
 
 text_input = st.text_area("Enter your speech here:", height=200)
 
@@ -29,85 +49,50 @@ if st.button("⚡ Analyze the Force"):
         sentences = re.split(r'(?<=[.!?]) +', text_input)
         sentences = [s.strip() for s in sentences if s.strip()]
 
-        X = vectorizer.transform(sentences)
-
-        scores_lr = lr.predict_proba(X)[:,1]
-        scores_mnb = mnb.predict_proba(X)[:,1]
-        scores_cnb = cnb.predict_proba(X)[:,1]
-
-        scores_svm = svm.decision_function(X)
-        scores_svm = (scores_svm - scores_svm.min()) / (scores_svm.max() - scores_svm.min())
-
-        avg_scores = {
-            "Logistic Regression": np.mean(scores_lr),
-            "Multinomial NB": np.mean(scores_mnb),
-            "Complement NB": np.mean(scores_cnb),
-            "SVM": np.mean(scores_svm),
-        }
-
-        overall_avg = np.mean(list(avg_scores.values()))
+        results = {}
+        sentence_scores = {}
 
         # =========================
-        # 真·模式切换
+        # 预测
+        # =========================
+        for name, bundle in models.items():
+            preds = []
+
+            for s in sentences:
+                res = predict_force_alignment(s, bundle)
+                preds.append(res["Dark"])
+
+            sentence_scores[name] = preds
+            results[name] = np.mean(preds)
+
+        overall_avg = np.mean(list(results.values()))
+        verdict = "🌑 DARK SIDE" if overall_avg > 0.5 else "🌕 LIGHT SIDE"
+
+        # =========================
+        # 动态背景
         # =========================
         if overall_avg > 0.5:
-            mode = "dark"
-            verdict = "🌑 DARK SIDE"
-
             st.markdown("""
             <style>
-            .stApp {
-                background-color: #0b1120;
-                color: white;
-            }
-
-            /* 输入框 */
-            textarea {
-                background-color: #111827 !important;
-                color: white !important;
-            }
-
-            /* 按钮 */
-            button {
-                background-color: #1f2937 !important;
-                color: white !important;
-            }
-
-            /* metric卡片 */
+            .stApp { background-color: #0b1120; color: white; }
+            textarea { background-color: #111827 !important; color: white !important; }
+            button { background-color: #1f2937 !important; color: white !important; }
             [data-testid="metric-container"] {
                 background-color: #111827;
                 border-radius: 16px;
                 padding: 15px;
             }
-
-            /* 标题 */
-            h1, h2, h3, h4 {
-                color: white;
-            }
             </style>
             """, unsafe_allow_html=True)
-
         else:
-            mode = "light"
-            verdict = "🌕 LIGHT SIDE"
-
             st.markdown("""
             <style>
             .stApp {
                 background: linear-gradient(135deg, #fef9c3, #fde68a, #fcd34d);
                 color: black;
             }
-
-            textarea {
-                background-color: white !important;
-                color: black !important;
-            }
-
-            button {
-                background-color: #facc15 !important;
-                color: black !important;
-            }
-
+            textarea { background-color: white !important; color: black !important; }
+            button { background-color: #facc15 !important; color: black !important; }
             [data-testid="metric-container"] {
                 background-color: white;
                 border-radius: 16px;
@@ -123,40 +108,29 @@ if st.button("⚡ Analyze the Force"):
         # =========================
         st.subheader("🔮 Model Comparison")
 
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Logistic", f"{avg_scores['Logistic Regression']:.2f}")
-        col2.metric("MNB", f"{avg_scores['Multinomial NB']:.2f}")
-        col3.metric("CNB", f"{avg_scores['Complement NB']:.2f}")
-        col4.metric("SVM", f"{avg_scores['SVM']:.2f}")
+        cols = st.columns(len(results))
+        for col, (name, score) in zip(cols, results.items()):
+            col.metric(name, f"{score:.2f}")
 
         # =========================
-        # 图表
+        # 折线图
         # =========================
         st.subheader("📈 Sentence-level Dark Probability")
 
-        if mode == "dark":
-            paper_bg = "#0b1120"
-            plot_bg = "#111827"
-            font_color = "white"
-        else:
-            paper_bg = "#fff7ed"
-            plot_bg = "white"
-            font_color = "black"
-
         fig = go.Figure()
 
-        fig.add_trace(go.Scatter(y=scores_lr, mode='lines+markers', name="Logistic", line=dict(width=4)))
-        fig.add_trace(go.Scatter(y=scores_mnb, mode='lines+markers', name="MNB", line=dict(width=4)))
-        fig.add_trace(go.Scatter(y=scores_cnb, mode='lines+markers', name="CNB", line=dict(width=4)))
-        fig.add_trace(go.Scatter(y=scores_svm, mode='lines+markers', name="SVM", line=dict(width=4)))
+        for name in sentence_scores:
+            fig.add_trace(go.Scatter(
+                y=sentence_scores[name],
+                mode='lines+markers',
+                name=name,
+                line=dict(width=4)
+            ))
 
         fig.update_layout(
             yaxis=dict(range=[0,1]),
             xaxis_title="Sentence Index",
             yaxis_title="Dark Probability",
-            paper_bgcolor=paper_bg,
-            plot_bgcolor=plot_bg,
-            font=dict(color=font_color),
             height=550
         )
 
@@ -165,10 +139,10 @@ if st.button("⚡ Analyze the Force"):
         st.plotly_chart(fig, use_container_width=True)
 
         # =========================
-        # 极端句子
+        # 极端句子（用 Logistic 作参考）
         # =========================
-        darkest_index = np.argmax(scores_lr)
-        lightest_index = np.argmin(scores_lr)
+        darkest_index = np.argmax(sentence_scores["Logistic Regression"])
+        lightest_index = np.argmin(sentence_scores["Logistic Regression"])
 
         col_dark, col_light = st.columns(2)
 
