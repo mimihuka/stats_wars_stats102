@@ -9,28 +9,42 @@ st.set_page_config(page_title="Light vs Dark Analyzer", layout="wide")
 # =========================
 # 加载模型
 # =========================
-bundle_lr  = joblib.load("models/lr.pkl")
-bundle_mnb = joblib.load("models/mnb.pkl")
-bundle_cnb = joblib.load("models/cnb.pkl")
-bundle_bnb = joblib.load("models/bnb_best_bundle.pkl")
+lr  = joblib.load("models/lr.pkl")
+mnb = joblib.load("models/mnb.pkl")
+cnb = joblib.load("models/cnb.pkl")
+bnb = joblib.load("models/bnb_best.pkl")
+
+vectorizer = joblib.load("models/vectorizer.pkl")
+vectorizer_bnb = joblib.load("models/tfidf_bnb.pkl")
 
 models = {
-    "Logistic Regression": bundle_lr,
-    "Multinomial NB": bundle_mnb,
-    "Complement NB": bundle_cnb,
-    "Bernoulli NB (Best)": bundle_bnb
+    "Logistic Regression": ("normal", lr),
+    "Multinomial NB": ("normal", mnb),
+    "Complement NB": ("normal", cnb),
+    "Bernoulli NB (Best)": ("binary", bnb)
 }
 
 # =========================
-# 统一预测函数
+# 清洗函数
 # =========================
-def predict_force_alignment(text, bundle, threshold=0.5):
-    proba = bundle.predict_proba(text)
-    return {
-        "Light": proba[0],
-        "Dark": proba[1],
-        "prediction": "Light" if proba[0] >= threshold else "Dark"
-    }
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r"[^a-zA-Z\s]", "", text)
+    return text
+
+# =========================
+# 预测函数
+# =========================
+def predict_dark_prob(text, model_type, model):
+    clean = clean_text(text)
+
+    if model_type == "binary":
+        vec = vectorizer_bnb.transform([clean])
+        vec = (vec > 0).astype(int)
+    else:
+        vec = vectorizer.transform([clean])
+
+    return model.predict_proba(vec)[0][1]
 
 # =========================
 # UI
@@ -52,15 +66,12 @@ if st.button("⚡ Analyze the Force"):
         results = {}
         sentence_scores = {}
 
-        # =========================
-        # 预测
-        # =========================
-        for name, bundle in models.items():
+        for name, (model_type, model) in models.items():
             preds = []
 
             for s in sentences:
-                res = predict_force_alignment(s, bundle)
-                preds.append(res["Dark"])
+                prob = predict_dark_prob(s, model_type, model)
+                preds.append(prob)
 
             sentence_scores[name] = preds
             results[name] = np.mean(preds)
@@ -68,9 +79,7 @@ if st.button("⚡ Analyze the Force"):
         overall_avg = np.mean(list(results.values()))
         verdict = "🌑 DARK SIDE" if overall_avg > 0.5 else "🌕 LIGHT SIDE"
 
-        # =========================
         # 动态背景
-        # =========================
         if overall_avg > 0.5:
             st.markdown("""
             <style>
@@ -103,18 +112,14 @@ if st.button("⚡ Analyze the Force"):
 
         st.markdown(f"<h1 style='text-align:center'>{verdict}</h1>", unsafe_allow_html=True)
 
-        # =========================
         # 横向展示
-        # =========================
         st.subheader("🔮 Model Comparison")
 
         cols = st.columns(len(results))
         for col, (name, score) in zip(cols, results.items()):
             col.metric(name, f"{score:.2f}")
 
-        # =========================
         # 折线图
-        # =========================
         st.subheader("📈 Sentence-level Dark Probability")
 
         fig = go.Figure()
@@ -138,9 +143,7 @@ if st.button("⚡ Analyze the Force"):
 
         st.plotly_chart(fig, use_container_width=True)
 
-        # =========================
-        # 极端句子（用 Logistic 作参考）
-        # =========================
+        # 极端句子
         darkest_index = np.argmax(sentence_scores["Logistic Regression"])
         lightest_index = np.argmin(sentence_scores["Logistic Regression"])
 
