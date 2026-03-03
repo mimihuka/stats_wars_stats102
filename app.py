@@ -9,9 +9,9 @@ st.set_page_config(page_title="Light vs Dark Analyzer", layout="wide")
 # =========================
 # 加载模型
 # =========================
-bundle_lr  = joblib.load("models/bundle_lr.pkl")
-bundle_mnb = joblib.load("models/bundle_mnb.pkl")
-bundle_cnb = joblib.load("models/bundle_cnb.pkl")
+bundle_lr  = joblib.load("models/lr.pkl")
+bundle_mnb = joblib.load("models/mnb.pkl")
+bundle_cnb = joblib.load("models/cnb.pkl")
 bundle_bnb = joblib.load("models/bundle_bnb.pkl")
 
 models = {
