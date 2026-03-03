@@ -15,7 +15,7 @@ cnb = joblib.load("models/cnb.pkl")
 bnb = joblib.load("models/bnb_best.pkl")
 
 vectorizer = joblib.load("models/vectorizer.pkl")
-vectorizer_bnb = joblib.load("models/tfidf_bnb.pkl")
+# vectorizer_bnb = joblib.load("models/tfidf_bnb.pkl")
 
 models = {
     "Logistic Regression": ("normal", lr),
