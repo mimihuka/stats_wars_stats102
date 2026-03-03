@@ -185,9 +185,9 @@ if st.button("⚡ Analyze the Force"):
         # =========================
         # st.subheader("🔮 Model Comparison")
 
-        # cols = st.columns(len(results))
-        # for col, (name, score) in zip(cols, results.items()):
-        #     col.metric(name, f"{score:.2f}")
+        cols = st.columns(len(results))
+        for col, (name, score) in zip(cols, results.items()):
+            col.metric(name, f"{score:.2f}")
 
         # =========================
         # 折线图
