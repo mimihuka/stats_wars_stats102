@@ -12,7 +12,7 @@ st.set_page_config(page_title="Light vs Dark Analyzer", layout="wide")
 bundle_lr  = joblib.load("models/lr.pkl")
 bundle_mnb = joblib.load("models/mnb.pkl")
 bundle_cnb = joblib.load("models/cnb.pkl")
-bundle_bnb = joblib.load("models/bundle_bnb.pkl")
+bundle_bnb = joblib.load("models/bnb_best_model.pkl")
 
 models = {
     "Logistic Regression": bundle_lr,
