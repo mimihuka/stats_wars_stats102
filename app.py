@@ -9,30 +9,30 @@ st.set_page_config(page_title="Light vs Dark Analyzer", layout="wide")
 # =========================
 # 加载模型
 # =========================
-lr  = joblib.load("models/lr.pkl")
-mnb = joblib.load("models/mnb.pkl")
-cnb = joblib.load("models/cnb.pkl")
+# lr  = joblib.load("models/lr.pkl")
+# mnb = joblib.load("models/mnb.pkl")
+# cnb = joblib.load("models/cnb.pkl")
 bnb = joblib.load("models/bnb_best.pkl")
 
-vectorizer_normal = joblib.load("models/vectorizer.pkl")
+# vectorizer_normal = joblib.load("models/vectorizer.pkl")
 vectorizer_bnb = joblib.load("models/tfidf_bnb.pkl")
 
 models = {
-    "Logistic Regression": {
-        "model": lr,
-        "vectorizer": vectorizer_normal,
-        "binary": False
-    },
-    "Multinomial NB": {
-        "model": mnb,
-        "vectorizer": vectorizer_normal,
-        "binary": False
-    },
-    "Complement NB": {
-        "model": cnb,
-        "vectorizer": vectorizer_normal,
-        "binary": False
-    },
+    # "Logistic Regression": {
+    #     "model": lr,
+    #     "vectorizer": vectorizer_normal,
+    #     "binary": False
+    # },
+    # "Multinomial NB": {
+    #     "model": mnb,
+    #     "vectorizer": vectorizer_normal,
+    #     "binary": False
+    # },
+    # "Complement NB": {
+    #     "model": cnb,
+    #     "vectorizer": vectorizer_normal,
+    #     "binary": False
+    # },
     "Bernoulli NB (Best)": {
         "model": bnb,
         "vectorizer": vectorizer_bnb,
@@ -183,11 +183,11 @@ if st.button("⚡ Analyze the Force"):
         # =========================
         # 模型对比
         # =========================
-        st.subheader("🔮 Model Comparison")
+        # st.subheader("🔮 Model Comparison")
 
-        cols = st.columns(len(results))
-        for col, (name, score) in zip(cols, results.items()):
-            col.metric(name, f"{score:.2f}")
+        # cols = st.columns(len(results))
+        # for col, (name, score) in zip(cols, results.items()):
+        #     col.metric(name, f"{score:.2f}")
 
         # =========================
         # 折线图
