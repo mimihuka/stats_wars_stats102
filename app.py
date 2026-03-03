@@ -218,8 +218,8 @@ if st.button("⚡ Analyze the Force"):
         # =========================
         # 极端句子
         # =========================
-        darkest_index = np.argmax(sentence_scores["Logistic Regression"])
-        lightest_index = np.argmin(sentence_scores["Logistic Regression"])
+        darkest_index = np.argmax(sentence_scores["Bernoulli NB (Best)"])
+        lightest_index = np.argmin(sentence_scores["Bernoulli NB (Best)"])
 
         col_dark, col_light = st.columns(2)
 
